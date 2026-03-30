@@ -337,13 +337,14 @@ const EMOJI = {
   'Veg Roll':'🌯','अखबार वाला':'📰'
 };
 
-let categories = [], entries = [], deletedIds = new Set(), isSyncing = false;
+let categories = [], entries = [], isSyncing = false;
 
 // ====== INIT ======
 function init() {
+  // Categories only in localStorage (not sensitive)
   try { categories = JSON.parse(localStorage.getItem('khata_cats')||'null') || [...DEFAULT_CATS]; } catch(e) { categories=[...DEFAULT_CATS]; }
-  try { entries = JSON.parse(localStorage.getItem('khata_entries')||'[]'); } catch(e) { entries=[]; }
-  try { deletedIds = new Set(JSON.parse(localStorage.getItem('khata_deleted')||'[]')); } catch(e) { deletedIds=new Set(); }
+  // Entries always from Google Sheet only - no localStorage
+  entries = [];
   document.getElementById('dateInput').value = todayStr();
   renderAll();
   syncNow();
@@ -444,9 +445,6 @@ async function addEntry() {
   btn.innerHTML='<span style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;display:inline-block;animation:spin 0.8s linear infinite"></span> Saving...';
 
   const entry={ id:Date.now().toString(), person, category, amount, date, note, createdAt:new Date().toISOString() };
-  entries.push(entry);
-  localStorage.setItem('khata_entries',JSON.stringify(entries));
-  renderAll();
 
   document.getElementById('personName').value='';
   document.getElementById('amountInput').value='';
@@ -455,20 +453,33 @@ async function addEntry() {
 
   btn.disabled=false;
   btn.innerHTML='➕ Entry Add Karo';
-  showToast(`✅ ₹${fmt(amount)} ki entry save ho gayi!`);
-  await pushEntry(entry);
+
+  // Save to Sheet first
+  const ok = await pushEntry(entry);
+  if(ok) {
+    // Only add to memory after sheet confirms
+    entries.push(entry);
+    renderAll();
+    showToast('✅ ₹' + fmt(amount) + ' ki entry sheet mein save ho gayi!');
+  } else {
+    showToast('❌ Sheet mein save nahi hua - internet check karo!');
+  }
 }
 
-function deleteEntry(id) {
+async function deleteEntry(id) {
   if(!confirm('Is entry ko delete karna chahte hain?')) return;
-  entries=entries.filter(e=>e.id!==id);
-  deletedIds.add(id);
-  localStorage.setItem('khata_entries',JSON.stringify(entries));
-  localStorage.setItem('khata_deleted',JSON.stringify([...deletedIds]));
-  renderAll();
-  renderRecords();
-  showToast('🗑️ Entry permanently delete ho gayi!');
-  deleteFromSheet(id);
+  setStatus('syncing', 'Delete ho raha hai...');
+  const ok = await deleteFromSheet(String(id));
+  if(ok) {
+    entries = entries.filter(e => String(e.id) !== String(id));
+    renderAll();
+    renderRecords();
+    setStatus('online', 'Delete ho gaya! ' + new Date().toLocaleTimeString('hi-IN'));
+    showToast('Entry delete ho gayi!');
+  } else {
+    setStatus('offline', 'Sheet se delete nahi hua - internet check karo');
+    showToast('❌ Delete fail hua - internet check karo!');
+  }
 }
 
 // ====== RECORDS ======
@@ -591,51 +602,43 @@ function setStatus(type,msg) {
 async function syncNow() {
   if(isSyncing) return;
   isSyncing=true;
-  setStatus('syncing','🔄 Google Sheets se sync ho raha hai...');
+  setStatus('syncing', '🔄 Google Sheets se load ho raha hai...');
   try {
-    const res=await fetch(SCRIPT_URL+'?action=get');
-    const data=await res.json();
+    const res = await fetch(SCRIPT_URL + '?action=get');
+    const data = await res.json();
     if(data.success) {
-      const cloudEntries=data.entries||[];
-      const cloudCats=data.categories||[];
-      const localIds=new Set(entries.map(e=>e.id));
-      const cloudIds=new Set(cloudEntries.map(e=>e.id));
-
-      // Upload local-only
-      const toUp=entries.filter(e=>!cloudIds.has(e.id));
-      if(toUp.length) {
-        await fetch(SCRIPT_URL,{ method:'POST', headers:{'Content-Type':'text/plain'},
-          body:JSON.stringify({action:'addBatch',entries:toUp}) });
-      }
-
-      // Download cloud-only entries — but NEVER bring back deleted ones
-      const toDn=cloudEntries.filter(e=>!localIds.has(e.id) && !deletedIds.has(e.id));
-      if(toDn.length) entries=[...entries,...toDn];
-
-      // Merge cats
-      cloudCats.forEach(c=>{ if(c&&!categories.includes(c)) categories.push(c); });
-
-      localStorage.setItem('khata_entries',JSON.stringify(entries));
-      localStorage.setItem('khata_cats',JSON.stringify(categories));
+      // Sheet is the ONLY source of truth - directly load from sheet
+      entries = data.entries || [];
+      const cloudCats = data.categories || [];
+      cloudCats.forEach(c => { if(c && !categories.includes(c)) categories.push(c); });
+      localStorage.setItem('khata_cats', JSON.stringify(categories));
       renderAll();
-      setStatus('online',`✅ Synced! ${entries.length} entries · ${new Date().toLocaleTimeString('hi-IN')}`);
+      setStatus('online', '✅ Synced! ' + entries.length + ' entries · ' + new Date().toLocaleTimeString('hi-IN'));
     } else {
-      setStatus('offline','⚠️ Sheets se response nahi aaya');
+      setStatus('offline', '⚠️ Sheets se response nahi aaya');
     }
   } catch(e) {
-    setStatus('offline','❌ Sync fail — Internet check karo');
+    setStatus('offline', '❌ Sync fail — Internet check karo');
   }
   isSyncing=false;
 }
 
 async function pushEntry(entry) {
   try {
-    const res=await fetch(SCRIPT_URL,{ method:'POST', headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'add',entry}) });
-    const d=await res.json();
-    if(d.success) setStatus('online','✅ Google Sheet mein save! · '+new Date().toLocaleTimeString('hi-IN'));
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'add', entry })
+    });
+    const d = await res.json();
+    if(d.success) {
+      setStatus('online', '✅ Google Sheet mein save! · ' + new Date().toLocaleTimeString('hi-IN'));
+      return true;
+    }
+    return false;
   } catch(e) {
-    setStatus('offline','⚠️ Local save hua, Sheet sync pending — Sync button dabaao');
+    setStatus('offline', '❌ Sheet mein save nahi hua — Internet check karo');
+    return false;
   }
 }
 
