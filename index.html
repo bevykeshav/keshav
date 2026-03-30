@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khata Manager – Product by Keshav</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --saffron: #FF6B00;
+    --saffron-light: #FF8C30;
+    --gold: #FFB300;
+    --cream: #FFF8F0;
+    --ink: #1A0A00;
+    --ink2: #3D1F00;
+    --muted: #7A5C3A;
+    --green: #2E7D32;
+    --red: #C62828;
+    --red-light: #EF5350;
+    --card: #FFFDF8;
+    --border: #FFD9A8;
+    --shadow: 0 4px 20px rgba(255,107,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Baloo 2', 'Noto Sans Devanagari', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  .header {
+    background: linear-gradient(135deg, var(--saffron) 0%, #E65100 100%);
+    color: white; padding: 18px 20px 14px;
+    text-align: center; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 20px rgba(230,81,0,0.4);
+  }
+  .header-brand { font-size: 22px; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .header-brand span { color: var(--gold); }
+  .header-sub { font-size: 11px; opacity: 0.85; margin-top: 2px; letter-spacing: 1px; text-transform: uppercase; }
+
+  .tabs {
+    display: flex; background: white;
+    border-bottom: 2px solid var(--border);
+    overflow-x: auto; position: sticky; top: 65px; z-index: 90;
+  }
+  .tab {
+    padding: 12px 16px; font-size: 13px; font-weight: 700;
+    color: var(--muted); cursor: pointer; white-space: nowrap;
+    border-bottom: 3px solid transparent; transition: all 0.2s; flex-shrink: 0;
+  }
+  .tab.active { color: var(--saffron); border-bottom-color: var(--saffron); }
+
+  .container { padding: 16px; max-width: 700px; margin: 0 auto; }
+
+  .status-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 10px; margin-bottom: 14px;
+    font-size: 12px; font-weight: 600;
+    background: #E8F5E9; color: var(--green); border: 1px solid #A5D6A7;
+  }
+  .status-bar.offline { background: #FFF3E0; color: #E65100; border-color: #FFCC80; }
+  .status-bar.syncing { background: #E3F2FD; color: #1565C0; border-color: #90CAF9; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .sync-btn {
+    padding: 6px 14px; background: #1565C0; color: white;
+    border: none; border-radius: 8px; font-size: 11px;
+    font-family: inherit; font-weight: 700; cursor: pointer; margin-left: auto;
+  }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 18px; margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 15px; font-weight: 800; color: var(--saffron);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+  }
+
+  .form-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .form-group { display: flex; flex-direction: column; flex: 1; min-width: 140px; }
+  .form-group label {
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .form-group select, .form-group input {
+    padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-family: inherit; font-size: 14px; color: var(--ink);
+    background: white; outline: none; transition: border-color 0.2s;
+  }
+  .form-group select:focus, .form-group input:focus { border-color: var(--saffron); }
+
+  .btn {
+    padding: 11px 22px; border: none; border-radius: 10px;
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.18s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--saffron); color: white; box-shadow: 0 4px 12px rgba(255,107,0,0.3); }
+  .btn-primary:hover { background: #E65100; transform: translateY(-1px); }
+  .btn-primary:disabled { background: #ccc; box-shadow: none; transform: none; cursor: not-allowed; }
+  .btn-danger {
+    background: var(--red-light); color: white; font-size: 12px;
+    padding: 6px 10px; border-radius: 8px; border: none;
+    cursor: pointer; font-family: inherit; font-weight: 700;
+  }
+  .btn-sm { padding: 7px 16px; font-size: 12px; }
+
+  .cat-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .cat-tag {
+    display: flex; align-items: center; gap: 5px;
+    background: linear-gradient(135deg, var(--saffron), #FF8C30);
+    color: white; border-radius: 20px; padding: 5px 12px;
+    font-size: 13px; font-weight: 600;
+  }
+  .cat-del { background: none; border: none; color: white; cursor: pointer; font-size: 16px; line-height: 1; opacity: 0.8; }
+  .cat-del:hover { opacity: 1; }
+
+  .month-section { margin-bottom: 20px; }
+  .month-header {
+    background: linear-gradient(135deg, var(--ink), var(--ink2));
+    color: white; padding: 10px 16px; border-radius: 12px;
+    font-size: 14px; font-weight: 800;
+    display: flex; justify-content: space-between; margin-bottom: 10px;
+  }
+  .month-total { color: var(--gold); }
+
+  .record-item {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .record-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, #FF8C30, var(--gold));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .record-info { flex: 1; min-width: 0; }
+  .record-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .record-meta { font-size: 11px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .record-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+  .record-amount { font-size: 16px; font-weight: 800; color: var(--red); white-space: nowrap; }
+
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .summary-card { background: white; border: 1px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; }
+  .s-label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; }
+  .s-value { font-size: 22px; font-weight: 800; color: var(--saffron); margin-top: 4px; }
+  .summary-card.grand { grid-column: 1 / -1; background: linear-gradient(135deg, var(--saffron), #E65100); }
+  .summary-card.grand .s-label { color: rgba(255,255,255,0.8); }
+  .summary-card.grand .s-value { color: white; font-size: 28px; }
+
+  .cat-summary-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px dashed var(--border);
+  }
+  .cat-summary-row:last-child { border-bottom: none; }
+  .cat-bar-wrap { flex: 1; margin: 0 10px; background: #FFE0B2; border-radius: 4px; height: 6px; overflow: hidden; }
+  .cat-bar { height: 100%; background: var(--saffron); border-radius: 4px; transition: width 0.5s ease; }
+
+  .overall-month-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px; background: white; border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 8px;
+  }
+  .m-name { font-size: 14px; font-weight: 700; color: var(--ink2); }
+  .m-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .m-amount { font-size: 16px; font-weight: 800; color: var(--red); }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+  .empty-state .big { font-size: 48px; margin-bottom: 10px; }
+
+  .footer {
+    text-align: center; padding: 20px; font-size: 11px;
+    color: var(--muted); border-top: 1px solid var(--border); margin-top: 20px;
+  }
+  .footer b { color: var(--saffron); }
+
+  .hidden { display: none !important; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: white; padding: 10px 20px;
+    border-radius: 20px; font-size: 13px; font-weight: 600;
+    z-index: 9999; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 400px) {
+    .summary-grid { grid-template-columns: 1fr; }
+    .summary-card.grand { grid-column: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">🧾 <span>Khata</span> Manager</div>
+  <div class="header-sub">Product by Keshav</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('entry',this)">➕ Entry</div>
+  <div class="tab" onclick="showTab('records',this)">📋 Records</div>
+  <div class="tab" onclick="showTab('summary',this)">📊 Summary</div>
+  <div class="tab" onclick="showTab('overall',this)">🏆 Overall</div>
+  <div class="tab" onclick="showTab('categories',this)">📂 Categories</div>
+</div>
+
+<div class="container">
+
+  <div class="status-bar offline" id="statusBar">
+    <div class="status-dot"></div>
+    <span id="statusText">Connect ho raha hai...</span>
+    <button class="sync-btn" onclick="syncNow()">🔄 Sync</button>
+  </div>
+
+  <!-- ENTRY TAB -->
+  <div id="tab-entry">
+    <div class="card">
+      <div class="card-title">📝 Naya Khata Entry</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>व्यक्ति / दुकान</label>
+          <input type="text" id="personName" placeholder="Naam likhein..." />
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="categorySelect"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Raqam (₹)</label>
+          <input type="number" id="amountInput" placeholder="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Tarikh</label>
+          <input type="date" id="dateInput" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label>Note (Optional)</label>
+          <input type="text" id="noteInput" placeholder="Koi note likhein..." />
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addEntry()" id="addBtn">➕ Entry Add Karo</button>
+    </div>
+  </div>
+
+  <!-- RECORDS TAB -->
+  <div id="tab-records" class="hidden">
+    <div class="card">
+      <div class="card-title">🔍 Filter</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mahina</label>
+          <select id="filterMonth" onchange="renderRecords()">
+            <option value="">Sab Mahine</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="filterCat" onchange="renderRecords()">
+            <option value="">Sab Categories</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="recordsList"></div>
+  </div>
+
+  <!-- SUMMARY TAB -->
+  <div id="tab-summary" class="hidden">
+    <div class="card">
+      <div class="card-title">📊 Mahine ka Hisab</div>
+      <div class="form-group">
+        <label>Mahina Chunein</label>
+        <select id="summaryMonth" onchange="renderSummary()"></select>
+      </div>
+    </div>
+    <div id="summaryContent"></div>
+  </div>
+
+  <!-- OVERALL TAB -->
+  <div id="tab-overall" class="hidden">
+    <div id="overallContent"></div>
+  </div>
+
+  <!-- CATEGORIES TAB -->
+  <div id="tab-categories" class="hidden">
+    <div class="card">
+      <div class="card-title">📂 Categories Manage Karo</div>
+      <div class="cat-list" id="catList"></div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label>Naya Category Add Karo</label>
+          <input type="text" id="newCatInput" placeholder="Category naam likhein..."
+            onkeydown="if(event.key==='Enter')addCategory()" />
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn btn-primary btn-sm" onclick="addCategory()">+ Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">Made with ❤️ | <b>Product by Keshav</b> | Khata Manager v1.0</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== HARDCODED CONFIG ======
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwW_qAduNHmgoDBlWCwLC7xJ_cnI2iZ4REFnOXbrz53dt96B35kbLoR03yOaXhBP2Hx/exec';
+
+// ====== DEFAULTS ======
+const DEFAULT_CATS = [
+  'छोटी बिहार (चाय)','पंडित जी होटल','Phoenix Mall चाय',
+  'Ritikvik Food','छोले पराठे भटूरे','छोले कुलचे',
+  'बिरयानी','खाना','Other','गन्ने का जूस','Veg Roll','अखबार वाला'
+];
+
+const EMOJI = {
+  'छोटी बिहार (चाय)':'☕','पंडित जी होटल':'🍽️','Phoenix Mall चाय':'🧋',
+  'Ritikvik Food':'🍜','छोले पराठे भटूरे':'🥘','छोले कुलचे':'🫓',
+  'बिरयानी':'🍛','खाना':'🍱','Other':'📦','गन्ने का जूस':'🥤',
+  'Veg Roll':'🌯','अखबार वाला':'📰'
+};
+
+let categories = [], entries = [], isSyncing = false;
+
+// ====== INIT ======
+function init() {
+  try { categories = JSON.parse(localStorage.getItem('khata_cats')||'null') || [...DEFAULT_CATS]; } catch(e) { categories=[...DEFAULT_CATS]; }
+  try { entries = JSON.parse(localStorage.getItem('khata_entries')||'[]'); } catch(e) { entries=[]; }
+  document.getElementById('dateInput').value = todayStr();
+  renderAll();
+  syncNow();
+}
+
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function fmtMonth(ym) {
+  const [y,m]=ym.split('-');
+  return ['January','February','March','April','May','June','July','August','September','October','November','December'][parseInt(m)-1]+' '+y;
+}
+function emoji(cat) { return EMOJI[cat]||'💰'; }
+function fmt(n) { return n.toLocaleString('en-IN'); }
+
+// ====== TABS ======
+function showTab(name,el) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t=>t.classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  el.classList.add('active');
+  if(name==='records') renderRecords();
+  if(name==='summary') renderSummary();
+  if(name==='overall') renderOverall();
+  if(name==='categories') renderCatList();
+}
+
+// ====== RENDER ALL ======
+function renderAll() {
+  renderCatDropdowns();
+  renderCatList();
+  populateMonths();
+}
+
+function renderCatDropdowns() {
+  ['categorySelect','filterCat'].forEach(id=>{
+    const s=document.getElementById(id); if(!s) return;
+    const v=s.value;
+    s.innerHTML = id==='filterCat'?'<option value="">Sab Categories</option>':'';
+    categories.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; s.appendChild(o); });
+    if(v) s.value=v;
+  });
+}
+
+function populateMonths() {
+  const months=[...new Set(entries.map(e=>e.date.slice(0,7)))].sort().reverse();
+  ['filterMonth','summaryMonth'].forEach(id=>{
+    const s=document.getElementById(id); if(!s) return;
+    const v=s.value;
+    s.innerHTML = id==='filterMonth'?'<option value="">Sab Mahine</option>':'';
+    months.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=fmtMonth(m); s.appendChild(o); });
+    if(v) s.value=v;
+    else if(id==='summaryMonth'&&months.length) s.value=months[0];
+  });
+}
+
+// ====== CATEGORIES ======
+function renderCatList() {
+  document.getElementById('catList').innerHTML = categories.map(c=>`
+    <div class="cat-tag">${c}
+      <button class="cat-del" onclick="deleteCategory('${c.replace(/'/g,"\\'")}')">×</button>
+    </div>`).join('');
+}
+
+function addCategory() {
+  const inp=document.getElementById('newCatInput');
+  const v=inp.value.trim();
+  if(!v) return showToast('⚠️ Category naam likhein!');
+  if(categories.includes(v)) return showToast('⚠️ Pehle se hai!');
+  categories.push(v);
+  localStorage.setItem('khata_cats',JSON.stringify(categories));
+  inp.value='';
+  renderAll();
+  showToast('✅ Category add ho gayi!');
+}
+
+function deleteCategory(cat) {
+  if(entries.some(e=>e.category===cat)) return showToast('⚠️ Is category mein entries hain!');
+  categories=categories.filter(c=>c!==cat);
+  localStorage.setItem('khata_cats',JSON.stringify(categories));
+  renderAll();
+  showToast('🗑️ Category delete ho gayi');
+}
+
+// ====== ENTRY ======
+async function addEntry() {
+  const person=document.getElementById('personName').value.trim();
+  const category=document.getElementById('categorySelect').value;
+  const amount=parseFloat(document.getElementById('amountInput').value);
+  const date=document.getElementById('dateInput').value;
+  const note=document.getElementById('noteInput').value.trim();
+
+  if(!person) return showToast('⚠️ Naam likhein!');
+  if(!category) return showToast('⚠️ Category chunein!');
+  if(!amount||amount<=0) return showToast('⚠️ Sahi raqam likhein!');
+  if(!date) return showToast('⚠️ Tarikh chunein!');
+
+  const btn=document.getElementById('addBtn');
+  btn.disabled=true;
+  btn.innerHTML='<span style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;display:inline-block;animation:spin 0.8s linear infinite"></span> Saving...';
+
+  const entry={ id:Date.now().toString(), person, category, amount, date, note, createdAt:new Date().toISOString() };
+  entries.push(entry);
+  localStorage.setItem('khata_entries',JSON.stringify(entries));
+  renderAll();
+
+  document.getElementById('personName').value='';
+  document.getElementById('amountInput').value='';
+  document.getElementById('noteInput').value='';
+  document.getElementById('dateInput').value=todayStr();
+
+  btn.disabled=false;
+  btn.innerHTML='➕ Entry Add Karo';
+  showToast(`✅ ₹${fmt(amount)} ki entry save ho gayi!`);
+  await pushEntry(entry);
+}
+
+function deleteEntry(id) {
+  if(!confirm('Is entry ko delete karna chahte hain?')) return;
+  entries=entries.filter(e=>e.id!==id);
+  localStorage.setItem('khata_entries',JSON.stringify(entries));
+  renderAll();
+  renderRecords();
+  showToast('🗑️ Entry delete ho gayi');
+  deleteFromSheet(id);
+}
+
+// ====== RECORDS ======
+function renderRecords() {
+  const fm=document.getElementById('filterMonth').value;
+  const fc=document.getElementById('filterCat').value;
+  let f=[...entries].sort((a,b)=>b.date.localeCompare(a.date));
+  if(fm) f=f.filter(e=>e.date.startsWith(fm));
+  if(fc) f=f.filter(e=>e.category===fc);
+
+  const el=document.getElementById('recordsList');
+  if(!f.length){ el.innerHTML='<div class="empty-state"><div class="big">📭</div>Koi entry nahi mili</div>'; return; }
+
+  const groups={};
+  f.forEach(e=>{ const m=e.date.slice(0,7); (groups[m]=groups[m]||[]).push(e); });
+
+  el.innerHTML=Object.keys(groups).sort().reverse().map(m=>{
+    const total=groups[m].reduce((s,e)=>s+e.amount,0);
+    return `<div class="month-section">
+      <div class="month-header"><span>📅 ${fmtMonth(m)}</span><span class="month-total">₹${fmt(total)}</span></div>
+      ${groups[m].map(e=>`
+        <div class="record-item">
+          <div class="record-icon">${emoji(e.category)}</div>
+          <div class="record-info">
+            <div class="record-name">${e.person}</div>
+            <div class="record-meta">${e.category} · ${e.date}${e.note?' · '+e.note:''}</div>
+          </div>
+          <div class="record-right">
+            <div class="record-amount">₹${fmt(e.amount)}</div>
+            <button class="btn-danger" onclick="deleteEntry('${e.id}')">🗑️</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ====== SUMMARY ======
+function renderSummary() {
+  const m=document.getElementById('summaryMonth').value;
+  const el=document.getElementById('summaryContent');
+  if(!m){ el.innerHTML='<div class="empty-state"><div class="big">📅</div>Mahina chunein</div>'; return; }
+
+  const f=entries.filter(e=>e.date.startsWith(m));
+  if(!f.length){ el.innerHTML='<div class="empty-state"><div class="big">📭</div>Is mahine koi entry nahi hai</div>'; return; }
+
+  const total=f.reduce((s,e)=>s+e.amount,0);
+  const byCat={}, byPerson={};
+  f.forEach(e=>{ byCat[e.category]=(byCat[e.category]||0)+e.amount; byPerson[e.person]=(byPerson[e.person]||0)+e.amount; });
+  const maxCat=Math.max(...Object.values(byCat));
+
+  el.innerHTML=`
+    <div class="summary-grid">
+      <div class="summary-card"><div class="s-label">Kul Entries</div><div class="s-value">${f.length}</div></div>
+      <div class="summary-card"><div class="s-label">Average</div><div class="s-value">₹${fmt(Math.round(total/f.length))}</div></div>
+      <div class="summary-card grand"><div class="s-label">📅 ${fmtMonth(m)} — Kul Kharch</div><div class="s-value">₹${fmt(total)}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📂 Category-wise Hisab</div>
+      ${Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>`
+        <div class="cat-summary-row">
+          <span style="font-size:13px;font-weight:700;min-width:130px">${emoji(cat)} ${cat}</span>
+          <div class="cat-bar-wrap"><div class="cat-bar" style="width:${(amt/maxCat*100).toFixed(1)}%"></div></div>
+          <span style="font-weight:800;color:var(--red);white-space:nowrap">₹${fmt(amt)}</span>
+        </div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="card-title">👤 Person-wise Hisab</div>
+      ${Object.entries(byPerson).sort((a,b)=>b[1]-a[1]).map(([p,amt])=>`
+        <div class="cat-summary-row">
+          <span style="font-size:13px;font-weight:700;flex:1">👤 ${p}</span>
+          <span style="font-weight:800;color:var(--red)">₹${fmt(amt)}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ====== OVERALL ======
+function renderOverall() {
+  const el=document.getElementById('overallContent');
+  if(!entries.length){ el.innerHTML='<div class="empty-state"><div class="big">📊</div>Abhi koi entries nahi hain</div>'; return; }
+
+  const grand=entries.reduce((s,e)=>s+e.amount,0);
+  const months=[...new Set(entries.map(e=>e.date.slice(0,7)))].sort().reverse();
+  const byCat={};
+  entries.forEach(e=>{ byCat[e.category]=(byCat[e.category]||0)+e.amount; });
+
+  el.innerHTML=`
+    <div class="summary-card grand" style="margin-bottom:14px;padding:20px;border-radius:16px;display:block;text-align:center">
+      <div class="s-label">🏆 Sabka Mila ke — Grand Total</div>
+      <div class="s-value" style="font-size:32px">₹${fmt(grand)}</div>
+      <div style="color:rgba(255,255,255,0.75);font-size:12px;margin-top:4px">${entries.length} entries · ${months.length} mahine</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📅 Har Mahine ka Total</div>
+      ${months.map(m=>{
+        const t=entries.filter(e=>e.date.startsWith(m)).reduce((s,e)=>s+e.amount,0);
+        const cnt=entries.filter(e=>e.date.startsWith(m)).length;
+        return `<div class="overall-month-row">
+          <div><div class="m-name">📅 ${fmtMonth(m)}</div><div class="m-sub">${cnt} entries</div></div>
+          <div class="m-amount">₹${fmt(t)}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="card">
+      <div class="card-title">📂 Category Grand Total</div>
+      ${Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>`
+        <div class="cat-summary-row">
+          <span style="font-size:13px;font-weight:700;min-width:130px">${emoji(cat)} ${cat}</span>
+          <span style="font-weight:800;color:var(--red)">₹${fmt(amt)}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ====== GOOGLE SHEETS ======
+function setStatus(type,msg) {
+  const bar=document.getElementById('statusBar');
+  bar.className='status-bar '+type;
+  document.getElementById('statusText').textContent=msg;
+}
+
+async function syncNow() {
+  if(isSyncing) return;
+  isSyncing=true;
+  setStatus('syncing','🔄 Google Sheets se sync ho raha hai...');
+  try {
+    const res=await fetch(SCRIPT_URL+'?action=get');
+    const data=await res.json();
+    if(data.success) {
+      const cloudEntries=data.entries||[];
+      const cloudCats=data.categories||[];
+      const localIds=new Set(entries.map(e=>e.id));
+      const cloudIds=new Set(cloudEntries.map(e=>e.id));
+
+      // Upload local-only
+      const toUp=entries.filter(e=>!cloudIds.has(e.id));
+      if(toUp.length) {
+        await fetch(SCRIPT_URL,{ method:'POST', headers:{'Content-Type':'text/plain'},
+          body:JSON.stringify({action:'addBatch',entries:toUp}) });
+      }
+
+      // Download cloud-only
+      const toDn=cloudEntries.filter(e=>!localIds.has(e.id));
+      if(toDn.length) entries=[...entries,...toDn];
+
+      // Merge cats
+      cloudCats.forEach(c=>{ if(c&&!categories.includes(c)) categories.push(c); });
+
+      localStorage.setItem('khata_entries',JSON.stringify(entries));
+      localStorage.setItem('khata_cats',JSON.stringify(categories));
+      renderAll();
+      setStatus('online',`✅ Synced! ${entries.length} entries · ${new Date().toLocaleTimeString('hi-IN')}`);
+    } else {
+      setStatus('offline','⚠️ Sheets se response nahi aaya');
+    }
+  } catch(e) {
+    setStatus('offline','❌ Sync fail — Internet check karo');
+  }
+  isSyncing=false;
+}
+
+async function pushEntry(entry) {
+  try {
+    const res=await fetch(SCRIPT_URL,{ method:'POST', headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'add',entry}) });
+    const d=await res.json();
+    if(d.success) setStatus('online','✅ Google Sheet mein save! · '+new Date().toLocaleTimeString('hi-IN'));
+  } catch(e) {
+    setStatus('offline','⚠️ Local save hua, Sheet sync pending — Sync button dabaao');
+  }
+}
+
+async function deleteFromSheet(id) {
+  try {
+    await fetch(SCRIPT_URL,{ method:'POST', headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'delete',id}) });
+  } catch(e) {}
+}
+
+// ====== TOAST ======
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+init();
+</script>
+</body>
+</html>
