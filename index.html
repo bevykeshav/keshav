@@ -337,12 +337,13 @@ const EMOJI = {
   'Veg Roll':'🌯','अखबार वाला':'📰'
 };
 
-let categories = [], entries = [], isSyncing = false;
+let categories = [], entries = [], deletedIds = new Set(), isSyncing = false;
 
 // ====== INIT ======
 function init() {
   try { categories = JSON.parse(localStorage.getItem('khata_cats')||'null') || [...DEFAULT_CATS]; } catch(e) { categories=[...DEFAULT_CATS]; }
   try { entries = JSON.parse(localStorage.getItem('khata_entries')||'[]'); } catch(e) { entries=[]; }
+  try { deletedIds = new Set(JSON.parse(localStorage.getItem('khata_deleted')||'[]')); } catch(e) { deletedIds=new Set(); }
   document.getElementById('dateInput').value = todayStr();
   renderAll();
   syncNow();
@@ -461,10 +462,12 @@ async function addEntry() {
 function deleteEntry(id) {
   if(!confirm('Is entry ko delete karna chahte hain?')) return;
   entries=entries.filter(e=>e.id!==id);
+  deletedIds.add(id);
   localStorage.setItem('khata_entries',JSON.stringify(entries));
+  localStorage.setItem('khata_deleted',JSON.stringify([...deletedIds]));
   renderAll();
   renderRecords();
-  showToast('🗑️ Entry delete ho gayi');
+  showToast('🗑️ Entry permanently delete ho gayi!');
   deleteFromSheet(id);
 }
 
@@ -605,8 +608,8 @@ async function syncNow() {
           body:JSON.stringify({action:'addBatch',entries:toUp}) });
       }
 
-      // Download cloud-only
-      const toDn=cloudEntries.filter(e=>!localIds.has(e.id));
+      // Download cloud-only entries — but NEVER bring back deleted ones
+      const toDn=cloudEntries.filter(e=>!localIds.has(e.id) && !deletedIds.has(e.id));
       if(toDn.length) entries=[...entries,...toDn];
 
       // Merge cats
