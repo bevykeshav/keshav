@@ -641,9 +641,16 @@ async function pushEntry(entry) {
 
 async function deleteFromSheet(id) {
   try {
-    await fetch(SCRIPT_URL,{ method:'POST', headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'delete',id}) });
-  } catch(e) {}
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'delete', id: String(id) })
+    });
+    const d = await res.json();
+    return d.success === true;
+  } catch(e) {
+    return false;
+  }
 }
 
 // ====== TOAST ======
